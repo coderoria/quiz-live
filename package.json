@@ -1,0 +1,30 @@
+{
+  "name": "quiz-live",
+  "version": "0.0.1",
+  "description": "A live quiz system built on Node.js",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coderoria/quiz-live.git"
+  },
+  "keywords": [
+    "quiz",
+    "live",
+    "browser"
+  ],
+  "author": "CodeRoria",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/coderoria/quiz-live/issues"
+  },
+  "homepage": "https://github.com/coderoria/quiz-live#readme",
+  "dependencies": {
+    "express": "^4.17.3",
+    "sqlite": "^4.0.25",
+    "sqlite3": "^5.0.3"
+  }
+}

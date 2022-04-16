@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS questions (
+	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	question TEXT NOT NULL,
+	answerOne TEXT NOT NULL,
+	answerTwo TEXT NOT NULL,
+	answerThree TEXT NOT NULL,
+	answerFour TEXT NOT NULL,
+	answerIndex INTEGER NOT NULL
+);
