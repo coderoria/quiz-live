@@ -8,11 +8,14 @@ html(lang="de")
         link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css")
         script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js") 
         script(src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js") 
+        script(src="//cdn.jsdelivr.net/npm/sweetalert2@11") 
         title #{cData.name} Katalog
     body.bg-dark
         .container-fluid.text-light
             .row.justify-content-center.mt-5
-                .col-5
+                .col-auto
+                    button.btn.btn-secondary.fa-solid.fa-backward(id="back-btn")
+                .col-auto
                     h3 #{cData.name}
             .row.justify-content-center.mx-3
                 if qData.length == 0
@@ -21,7 +24,7 @@ html(lang="de")
                         button.btn.btn-primary.ms-3(id="add") <i class="fa-solid fa-plus"></i>
                 else 
                     .col-5.text-dark
-                        form
+                        form.mb-3
                             for question in qData
                                 .card(data-id=question.id).mb-3
                                     .card-header
@@ -54,9 +57,21 @@ html(lang="de")
                                             .col-3.text-center
                                                 button.btn.btn-danger.fa-solid.fa-trash-can(type="button" id="delQ"+question.id data-qid=question.id)
                             .mt-3
-                                button.btn.btn-primary(id="add") <i class="fa-solid fa-plus"></i>
-                                button.btn.btn-success(id="save" type="submit").ms-2 Speichern
+                                button.btn.btn-secondary(id="add") <i class="fa-solid fa-plus"></i>
+                                button.btn.btn-primary(id="save" type="submit").ms-2 Speichern
     script.
+        if(new URLSearchParams(window.location.search).has("saved")) {
+            Swal.fire({
+                icon: "success",
+                title: "Änderungen gespeichert",
+                toast: true,
+                position: "top-end",
+                timer: 3000,
+                showConfirmButton: false,
+                timerProgressBar: true,
+            });
+        }
+
         $(".card").each((index, element) => {
             let value = $(element).find("select").data("selected");
             $(element).find(`option[value=${value}]`).attr("selected", true);
@@ -65,13 +80,30 @@ html(lang="de")
         $("[id^=delQ]").on("click", event => {
             event.preventDefault();
             let qId = $(event.target).data("qid");
-            $.ajax({
-                method: "delete",
-                url: "/question/"+qId,
-                success: (data) => {
-                    window.location.reload();
+            Swal.fire({
+                icon: "warning",
+                title: "Bist du sicher?",
+                text: "Du bist dabei, eine Frage zu löschen",
+                showCancelButton: true,
+                confirmButtonText: "Ja, löschen",
+                cancelButtonText: "Abbrechen",
+                customClass: {
+                    "confirmButton": "btn btn-danger me-2",
+                    "cancelButton": "btn btn-secondary ms-2"
+                },
+                buttonsStyling: false
+            }).then(result => {
+                if(!result.isConfirmed) {
+                    return;
                 }
-            })
+                $.ajax({
+                    method: "delete",
+                    url: "/question/"+qId,
+                    success: (data) => {
+                        window.location.reload();
+                    }
+                });
+            });
         });
 
         $("#add").on("click", event => {
@@ -83,26 +115,64 @@ html(lang="de")
             });
         });
 
+        function save(reload=true) {
+            return new Promise((resolve, reject) => {
+                $("button[type=submit]").html(`<span class="spinner-border spinner-border-sm"></span>`)
+                let data = {};
+                $(".card").each((index, element) => {
+                    data[$(element).data("id")] = {};
+                    data[$(element).data("id")].question = $(element).find("input").eq(0).val();
+                    data[$(element).data("id")].answerOne = $(element).find("input").eq(1).val();
+                    data[$(element).data("id")].answerTwo = $(element).find("input").eq(2).val();
+                    data[$(element).data("id")].answerThree = $(element).find("input").eq(3).val();
+                    data[$(element).data("id")].answerFour = $(element).find("input").eq(4).val();
+                    data[$(element).data("id")].answerIndex = $(element).find("select").val();
+                });
+                $.ajax({
+                    method: "post",
+                    url: "/catalogue/#{cData.id}",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: (data) => {
+                        let params = new URLSearchParams(window.location.search);
+                        params.set("saved", true);
+                        if(reload) window.location.search = params.toString();
+                        resolve();
+                        //window.location.reload();
+                    }
+                });
+            });
+        }
+
         $("form").on("submit", event => {
             event.preventDefault();
-            $("button[type=submit]").html(`<span class="spinner-border spinner-border-sm"></span>`)
-            let data = {};
-            $(".card").each((index, element) => {
-                data[$(element).data("id")] = {};
-                data[$(element).data("id")].question = $(element).find("input").eq(0).val();
-                data[$(element).data("id")].answerOne = $(element).find("input").eq(1).val();
-                data[$(element).data("id")].answerTwo = $(element).find("input").eq(2).val();
-                data[$(element).data("id")].answerThree = $(element).find("input").eq(3).val();
-                data[$(element).data("id")].answerFour = $(element).find("input").eq(4).val();
-                data[$(element).data("id")].answerIndex = $(element).find("select").val();
-            });
-            $.ajax({
-                method: "post",
-                url: "/catalogue/#{cData.id}",
-                contentType: "application/json",
-                data: JSON.stringify(data),
-                success: (data) => {
-                    window.location.reload();
+            save();
+        });
+
+        $("#back-btn").on("click", event => {
+            Swal.fire({
+                icon: "warning",
+                title: "Möchtest du speichern?",
+                text: "Speichere deine Änderungen vor dem Zurückkehren, damit sie nicht verloren gehen.",
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: "Speichern und Fortfahren",
+                denyButtonText: "Nicht speichern",
+                cancelButtonText: "Abbrechen",
+                customClass: {
+                    "confirmButton": "btn btn-primary mx-2",
+                    "cancelButton": "btn btn-secondary mx-2",
+                    "denyButton": "btn btn-danger mx-2"
+                },
+                buttonsStyling: false
+            }).then(async result => {
+                console.log(result);
+                if(result.isDismissed) {
+                    return;
                 }
+                if(result.isConfirmed) {
+                    await save(false);
+                }
+                window.location.assign("/");
             });
         });

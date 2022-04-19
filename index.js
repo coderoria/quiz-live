@@ -72,6 +72,13 @@ app.post("/catalogue", (req, res) => {
     });
 });
 
+// Delete an existing catalogue (and all its questions)
+app.delete("/catalogue/:id", async (req, res) => {
+  db.run("DELETE FROM catalogue WHERE id=?;", req.params.id).then(() => {
+    res.sendStatus(200);
+  });
+});
+
 // Retrieves an existing catalogue
 app.get("/catalogue/:id", async (req, res) => {
   let qData = await db.all(

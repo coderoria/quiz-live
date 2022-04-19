@@ -24,6 +24,7 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>Start</title>
     <style></style>
   </head>
@@ -37,6 +38,18 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+      if (new URLSearchParams(window.location.search).has("login")) {
+        Swal.fire({
+          icon: "success",
+          title: "Erfolgreich angemeldet",
+          toast: true,
+          position: "top-end",
+          timer: 3000,
+          showConfirmButton: false,
+          timerProgressBar: true,
+        });
+      }
+
       $.ajax({
         method: "GET",
         url: "/catalogue",
@@ -46,17 +59,52 @@
           <div class="col-6 col-lg-2">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">{{name}}</h5>
-              <a href="/catalogue/{{i}}" class="fa-solid fa-pen-to-square"></a>
-            </div>
+              <div class="row">
+                <h5 class="card-title">{{name}}</h5>
+              </div>
+              <div class="row">
+                <div class="col-auto">
+                  <a href="/catalogue/{{i}}" class="btn btn-primary fa-solid fa-pen-to-square"></a>
+                </div>
+                <div class="col-auto">
+                  <button id="delC{{i}}" data-cid="{{i}}" class="btn btn-danger fa-solid fa-trash-can"></button>
+                </div>
+              </div>
           </div></div>`;
           let html = "";
           for (let i in data) {
             html += template
-              .replace("{{name}}", data[i].name)
-              .replace("{{i}}", data[i].id);
+              .replaceAll("{{name}}", data[i].name)
+              .replaceAll("{{i}}", data[i].id);
           }
           $("#catalogue-container").html(html);
+
+          $("[id^=delC]").on("click", (event) => {
+            Swal.fire({
+              icon: "warning",
+              title: "Bist du sicher?",
+              text: "Du bist dabei, einen Fragenkatalog zu löschen!",
+              showCancelButton: true,
+              confirmButtonText: "Ja, löschen",
+              cancelButtonText: "Abbrechen",
+              customClass: {
+                confirmButton: "btn btn-danger me-2",
+                cancelButton: "btn btn-secondary ms-2",
+              },
+              buttonsStyling: false,
+            }).then((result) => {
+              if (result.isDismissed) {
+                return;
+              }
+              $.ajax({
+                method: "delete",
+                url: "/catalogue/" + $(event.target).data("cid"),
+                success: () => {
+                  window.location.reload();
+                },
+              });
+            });
+          });
         },
         error: () => {
           console.log("Error!");
