@@ -57,7 +57,7 @@ html(lang="de")
                                             .col-3.text-center
                                                 button.btn.btn-danger.fa-solid.fa-trash-can(type="button" id="delQ"+question.id data-qid=question.id)
                             .mt-3
-                                button.btn.btn-secondary(id="add") <i class="fa-solid fa-plus"></i>
+                                button.btn.btn-secondary(id="add" type="button") <i class="fa-solid fa-plus"></i>
                                 button.btn.btn-primary(id="save" type="submit").ms-2 Speichern
     script.
         if(new URLSearchParams(window.location.search).has("saved")) {
@@ -71,6 +71,11 @@ html(lang="de")
                 timerProgressBar: true,
             });
         }
+
+        let changed = false;
+        $("body").on("change", (event) => {
+            changed = true;
+        });
 
         $(".card").each((index, element) => {
             let value = $(element).find("select").data("selected");
@@ -111,7 +116,10 @@ html(lang="de")
                 method: "post",
                 url: "/question",
                 data: JSON.stringify({catalogue: #{cData.id}}),
-                contentType: "application/json"
+                contentType: "application/json",
+                success: () => {
+                    save();
+                }
             });
         });
 
@@ -150,6 +158,10 @@ html(lang="de")
         });
 
         $("#back-btn").on("click", event => {
+            if(!changed) {
+                window.location.assign("/");
+                return;
+            }
             Swal.fire({
                 icon: "warning",
                 title: "Möchtest du speichern?",
