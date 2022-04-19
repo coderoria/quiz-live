@@ -142,9 +142,15 @@ app.delete("/question/:id", async (req, res) => {
   res.sendStatus(200);
 });
 
-app.use(
-  express.static(join(dirname(fileURLToPath(import.meta.url)), "/webapp"))
-);
+// Display start page
+app.get("/", (req, res) => {
+  db.all("SELECT * FROM catalogue;").then((cData) => {
+    console.log(cData);
+    res.render("index", {
+      cData: cData,
+    });
+  });
+});
 
 io.on("connection", (socket) => {
   console.log("Viewer " + socket.id + " connected!");
