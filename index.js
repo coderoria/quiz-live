@@ -74,7 +74,11 @@ app.post("/catalogue", (req, res) => {
 
 // Delete an existing catalogue (and all its questions)
 app.delete("/catalogue/:id", async (req, res) => {
-  db.run("DELETE FROM catalogue WHERE id=?;", req.params.id).then(() => {
+  db.run(
+    "DELETE FROM catalogue WHERE id=?;DELETE FROM questions WHERE catalogue=?;",
+    req.params.id,
+    req.params.id
+  ).then(() => {
     res.sendStatus(200);
   });
 });
