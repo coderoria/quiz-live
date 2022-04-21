@@ -138,6 +138,11 @@ app.delete("/question/:id", async (req, res) => {
   res.sendStatus(200);
 });
 
+// Game overlay
+app.get("/overlay", (req, res) => {
+  res.render("overlay");
+});
+
 // Display start page
 app.get("/", (req, res) => {
   db.all("SELECT * FROM catalogue;").then((cData) => {
