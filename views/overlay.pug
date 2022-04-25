@@ -10,27 +10,80 @@ html(lang="en")
         link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css")
         title Quiz Live Overlay
     body.bg-dark
-        div(style="display:flex;justify-content:space-around;margin-top:5%")
-            div(style="height:450px; width:800px; border:6px solid; border-radius: 10px;").border-primary
-            div(style="height:450px; width:800px; border:6px solid; border-radius: 10px").border-primary
-        div(style="").border.border-danger.mt-5
-            div(id="question" style="width:40vw;border-radius:20px").bg-primary.text-light.mx-auto.p-2
-                span(style="font-weight: bold;") Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet voluptate assumenda expedita dignissimos eius eligendi optio ducimus deserunt repellendus, quia accusantium velit voluptas adipisci, a autem asperiores, inventore veritatis quo.
-            div(style="display:flex; justify-content: space-between; width:40vw;").mx-auto.mt-2
-                div(id="answerA" style="border-radius:20px;width:48%;display:table;").bg-primary.text-light.p-2
-                    span(style="font-weight: bold;display:table-cell;vertical-align:middle;width:1em") A
-                    span(style="display:table-cell;vertical-align:middle;") Lorem
-                div(id="answerB" style="border-radius:20px;width:48%;display:table;").bg-primary.text-light.p-2
-                    span(style="font-weight: bold;display:table-cell;vertical-align:middle;width:1em") B
-                    span(style="display:table-cell;vertical-align:middle;") ipsum
-            div(style="display:flex; justify-content: space-between; width:40vw;").mx-auto.mt-2
-                div(id="answerC" style="border-radius:20px;width:48%;display:table;").bg-primary.text-light.p-2
-                    span(style="font-weight: bold;display:table-cell;vertical-align:middle;width:1em") C
-                    span(style="display:table-cell;vertical-align:middle;") sit
-                div(id="answerD" style="border-radius:20px;width:48%;display:table;").bg-primary.text-light.p-2
-                    span(style="font-weight: bold;display:table-cell;vertical-align:middle;width:1em") D
-                    span(style="display:table-cell;vertical-align:middle;") Dies ist eine sehr lange Antwort, die gar nicht mal so lang ist.
+        div(style="position:absolute;top:2em;left:2em;")
+            div.bg-primary(style="border-radius:50%;").text-light
+                i.fa-solid.fa-square-poll-horizontal
+        .webcam-wrapper
+            .webcam-container.border-primary
+            .webcam-container.border-primary
+        .quiz-box.border.border-danger.mt-5
+            .question.mx-auto.bg-primary.text-light.p-2.text-center(id="question" style="transform: translateX(200%);")
+                span 
+            .answer-wrapper.mx-auto.mt-2
+                .answer.bg-primary.text-light.p-2(id="answerA" style="transform:translateY(100vh);")
+                    span.id A
+                    span.text 
+                .answer.bg-primary.text-light.p-2(id="answerB" style="transform:translateY(100vh);")
+                    span.id B
+                    span.text 
+            .answer-wrapper.mx-auto.mt-2
+                .answer.bg-primary.text-light.p-2(id="answerC" style="transform:translateY(100vh);")
+                    span.id C
+                    span.text 
+                .answer.bg-primary.text-light.p-2(id="answerD" style="transform:translateY(100vh);")
+                    span.id D
+                    span.text 
 
+        style.
+            body {
+                overflow: hidden;
+            }
+
+            .webcam-wrapper {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 5%;
+            }
+
+            .webcam-container {
+                height: 450px;
+                width: 800px;
+                border:6px solid;
+                border-radius: 10px;
+            }
+
+            .question {
+                width: 40vw;
+                border-radius: 20px;
+                font-weight: bold;
+            }
+
+            .answer-wrapper {
+                display:flex;
+                justify-content: space-between;
+                width:40vw;
+            }
+
+            .answer {
+                border-radius: 20px;
+                width: 48%;
+                display: table;
+            }
+
+            .answer .id {
+                font-weight: bold;
+                display: table-cell;
+                vertical-align: middle;
+                width: 1em;
+            }
+
+            .answer .text { style="transform:translateY(100vh);"
+                vertical-align: middle;
+            }
+
+            .quiz-box {
+                font-size: 1.2em
+            }
         script(src="/socket.io/socket.io.js")
         script(src="/js/anime.min.js") 
         script.
@@ -39,3 +92,26 @@ html(lang="en")
             socket.on("newQuestion", (question) => {
                 
             });
+
+            function showNewQuestion(question) {
+                $("#question span").html(question.question);
+                $("#answerA .text").html(question.answerOne);
+                $("#answerB .text").html(question.answerTwo);
+                $("#answerC .text").html(question.answerThree);
+                $("#answerD .text").html(question.answerFour);
+
+                anime({
+                    targets: '.question',
+                    translateX: '0%',
+                    easing: 'easeInOutQuad',
+                    complete: async (anim) => {
+                        for(let i of ["A","B","C","D"]) {
+                            await anime({
+                                targets: '#answer'+i,
+                                translateY: '0vh',
+                                easing: 'easeInOutQuad'
+                            }).finished;
+                        }
+                    }
+                });
+            }
