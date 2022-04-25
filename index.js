@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import crypto from "crypto";
 import cookie from "cookie";
+import "dotenv/config";
 import { Database } from "./Database.js";
 import { Game } from "./Game.js";
 const io = new Server(server);
@@ -20,9 +21,11 @@ app.use(cookieParser());
 app.set("view engine", "pug");
 
 app.get("/auth", (req, res) => {
-  res.sendFile(
-    join(dirname(fileURLToPath(import.meta.url)), "/webapp/auth.html")
-  );
+  res.render("auth", {
+    redirect: encodeURI(process.env.HOST + "/auth"),
+    scopes: "",
+    clientId: process.env.TWITCH_CLIENT_ID,
+  });
 });
 
 app.get("/js/:file", (req, res) => {
