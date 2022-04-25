@@ -2,8 +2,6 @@ import express from "express";
 const app = express();
 import http from "http";
 const server = http.createServer(app);
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { Server } from "socket.io";
@@ -11,7 +9,10 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import crypto from "crypto";
 import cookie from "cookie";
+import { Database } from "./Database.js";
+import { Game } from "./Game.js";
 const io = new Server(server);
+Game.setIO(io);
 
 app.use(bodyParser.json());
 
@@ -177,10 +178,7 @@ adminNS.on("connection", (socket) => {
   console.log(`Admin ${socket.id} connected`);
 });
 
-const db = await open({
-  filename: "database.db",
-  driver: sqlite3.Database,
-});
+const db = await Database.getInstance();
 
 await db.migrate();
 await db.run("PRAGMA foreign_keys = ON;"); // enable foreign key handling
