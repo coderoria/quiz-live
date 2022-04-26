@@ -12,18 +12,29 @@ import cookie from "cookie";
 import "dotenv/config";
 import { Database } from "./Database.js";
 import { Game } from "./Game.js";
+import { Twitch } from "./Twitch.js";
 const io = new Server(server);
 Game.setIO(io);
 
 app.use(bodyParser.json());
 
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.set("view engine", "pug");
 
-app.get("/auth", (req, res) => {
+app.get("/auth", async (req, res) => {
+  if (req.query.code) {
+    let token = await Twitch.getInstance().authorize(req.query.code);
+    if (!token) {
+      res.sendStatus(403);
+      return;
+    }
+    res.cookie("token", token, { signed: true });
+    res.redirect("/");
+    return;
+  }
   res.render("auth", {
     redirect: encodeURI(process.env.HOST + "/auth"),
-    scopes: "",
+    scopes: "channel:manage:polls",
     clientId: process.env.TWITCH_CLIENT_ID,
   });
 });
@@ -38,20 +49,12 @@ app.get("/js/:file", (req, res) => {
   );
 });
 
-app.post("/auth", async (req, res) => {
-  let valid = await checkAuth(req.body.token);
-  console.log(req.body.token);
-  if (!valid) {
-    res.sendStatus(403);
-    return;
-  }
-  res.cookie("token", req.body.token, { maxAge: 604800000 });
-  res.sendStatus(200);
-});
-
 app.use(async (req, res, next) => {
-  let valid = await checkAuth(req.cookies.token);
-  if (!valid) {
+  let valid = await checkAuth(req.signedCookies.token);
+  let twitchValid = await Twitch.getInstance().checkAuth(
+    await Twitch.getInstance().getAccessTokenByToken(req.signedCookies.token)
+  );
+  if (!(valid && twitchValid)) {
     res.redirect("/auth");
     return;
   }
@@ -188,19 +191,15 @@ await db.run("PRAGMA foreign_keys = ON;"); // enable foreign key handling
 
 console.log("Migrated database to newest schema");
 
-db.get("SELECT token FROM token;").then((data) => {
-  if (data == null) {
-    crypto.randomBytes(32, async (err, buff) => {
-      console.log(`Generated token: ${buff.toString("base64")}`);
-      await db.run("INSERT INTO token VALUES (?);", buff.toString("base64"));
-    });
-  }
-});
-
 server.listen(3000, () => {
   console.log("Listening on *:3000");
 });
 
+/**
+ * Checks if the cookie token is a user authorized
+ * @param {String} token
+ * @returns {Boolean} Wether or not the cookie token is stored in the DB
+ */
 async function checkAuth(token) {
   if (token == null) return false;
   let result = await db.get("SELECT token FROM token WHERE token=?;", token);
