@@ -23,11 +23,13 @@ export class Twitch {
    * @returns {String} access_token
    */
   async getAccessTokenByToken(token) {
-    return (
-      await (
-        await Database.getInstance()
-      ).get("SELECT access_token FROM token WHERE token=?;", token)
-    ).access_token;
+    let result = await (
+      await Database.getInstance()
+    ).get("SELECT access_token FROM token WHERE token=?;", token);
+    if (!result) {
+      return null;
+    }
+    return result.access_token;
   }
 
   /**
@@ -58,6 +60,9 @@ export class Twitch {
    * @returns {Boolean} DB contains valid access_token
    */
   async checkAuth(access_token) {
+    if (!access_token) {
+      return false;
+    }
     try {
       await axios.get("https://id.twitch.tv/oauth2/validate", {
         headers: { Authorization: "OAuth " + access_token },
