@@ -141,6 +141,9 @@ export class Twitch {
         console.error("Authorization w/o user. This should never occur.");
         return null;
       }
+      if (!process.env.ALLOWED_USERS.split(",").includes(id)) {
+        return null;
+      }
       let token = crypto.randomBytes(32).toString("base64");
       await (
         await Database.getInstance()
