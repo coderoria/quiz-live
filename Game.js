@@ -10,24 +10,42 @@ export class Game {
   currentQuestion = 0;
   questionVisible = false;
   selectedAnswer = null;
+  solved = false;
+  joker = { poll: 3, fiftyFifty: 2 };
 
   constructor() {
-    Game.adminNS.on("connection", (socket) => {
-      socket.on("showQuestion", () => {
-        this.questionVisible = true;
-        this.sendState();
-      });
+    Game.adminNS.fetchSockets().then((sockets) => {
+      for (const socket of sockets) {
+        socket.on("showQuestion", () => {
+          this.questionVisible = true;
+          this.sendState();
+        });
 
-      socket.on("nextQuestion", () => {
-        if (this.currentQuestion + 1 >= this.questions.length) {
-          running = false;
-        } else {
-          this.currentQuestion++;
-          this.selectedAnswer = null;
-        }
-        this.questionVisible = false;
-        this.sendState();
-      });
+        socket.on("nextQuestion", () => {
+          if (this.currentQuestion + 1 >= this.questions.length) {
+            this.running = false;
+          } else {
+            this.currentQuestion++;
+            this.selectedAnswer = null;
+          }
+          this.questionVisible = false;
+          this.solved = false;
+          this.sendState();
+        });
+
+        socket.on("selectAnswer", (index) => {
+          if (typeof index != "number") {
+            return;
+          }
+          this.selectedAnswer = index;
+          this.sendState();
+        });
+
+        socket.on("solve", () => {
+          this.solved = true;
+          this.sendState();
+        });
+      }
     });
   }
 
@@ -69,9 +87,28 @@ export class Game {
   }
 
   /**
+   * Stop the currently running game
+   */
+  stop() {
+    Game.adminNS.fetchSockets().then((sockets) => {
+      for (const socket of sockets) {
+        //TODO: does actually nothing.
+        socket.removeAllListeners(
+          "showQuestion",
+          "nextQuestion",
+          "selectAnswer",
+          "solve"
+        );
+      }
+    });
+    delete Game.instance;
+  }
+
+  /**
    * Send the current game state to all sockets
    */
   sendState() {
+    Game.adminNS.emit("stateUpdate", this);
     Game.io.emit("stateUpdate", this);
   }
 }

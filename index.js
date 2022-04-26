@@ -189,6 +189,7 @@ adminNS.on("connection", (socket) => {
   console.log(`Admin ${socket.id} connected`);
   socket.on("sendTest", () => {
     Game.getInstance().sendState();
+    Game.getInstance().stop();
   });
 });
 
