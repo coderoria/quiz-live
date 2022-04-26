@@ -171,7 +171,12 @@ adminNS.use(async (socket, next) => {
     return;
   }
   let valid = await checkAuth(
-    cookie.parse(socket.handshake.headers.cookie).token
+    cookie.parse(
+      decodeURIComponent(socket.handshake.headers.cookie.split(".")[0]).replace(
+        "s:",
+        ""
+      )
+    ).token
   );
   if (!valid) {
     console.log("Invalid auth for " + socket.id);
@@ -182,6 +187,9 @@ adminNS.use(async (socket, next) => {
 
 adminNS.on("connection", (socket) => {
   console.log(`Admin ${socket.id} connected`);
+  socket.on("sendTest", () => {
+    Game.getInstance().sendState();
+  });
 });
 
 const db = await Database.getInstance();
