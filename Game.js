@@ -38,6 +38,7 @@ export class Game {
     socket.on("selectAnswer", this.selectAnswer.bind(this));
     socket.on("solve", this.solve.bind(this));
     socket.on("useJoker", this.useJoker.bind(this));
+    socket.on("sendState", this.sendState.bind(this));
   }
 
   /**
@@ -93,6 +94,7 @@ export class Game {
         socket.removeAllListeners("selectAnswer");
         socket.removeAllListeners("solve");
         socket.removeAllListeners("useJoker");
+        socket.removeAllListeners("sendState");
       }
     });
     delete Game.instance;

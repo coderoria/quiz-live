@@ -150,6 +150,21 @@ app.get("/overlay", (req, res) => {
   res.render("overlay");
 });
 
+// Start a new game with catalogue
+app.post("/game/:catalogue", async (req, res) => {
+  let result = await Game.getInstance().start(req.params.catalogue);
+  if (result) {
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
+  }
+});
+
+// Game controller interface
+app.get("/game", (req, res) => {
+  res.render("game");
+});
+
 // Display start page
 app.get("/", (req, res) => {
   db.all("SELECT * FROM catalogue;").then((cData) => {
