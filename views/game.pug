@@ -11,9 +11,15 @@ html(lang="de")
         script(src="//cdn.jsdelivr.net/npm/sweetalert2@11") 
         title Game Controller
     body.bg-dark.text-light
-        div.mx-auto
-            div.text-center
-                span Test
+        div.mx-auto.mt-3
+            div(id="question")
+                div.text-center.text-muted
+                    span Test
+                div.text-center.text-muted.mt-2
+                    button.btn.btn-secondary.mx-1 A
+                    button.btn.btn-secondary.mx-1 B
+                    button.btn.btn-secondary.mx-1 C
+                    button.btn.btn-secondary.mx-1 D
     script(src="/socket.io/socket.io.js") 
     script.
         const socket = io("/admin");
