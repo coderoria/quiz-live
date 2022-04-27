@@ -11,27 +11,56 @@ html(lang="de")
         script(src="//cdn.jsdelivr.net/npm/sweetalert2@11") 
         title Game Controller
     body.bg-dark.text-light
-        div.mx-auto(style="position:absolute;top:50vh;left:50vw;transform:translate(-50%, calc(-50% - 5rem));")
-            div(id="question" style="").mt-5
-                div.text-center.text-light
-                    span Test
-                div.text-center.mt-2
-                    button.btn.btn-primary.mx-1 A
-                    button.btn.btn-primary.mx-1 B
-                    button.btn.btn-primary.mx-1 C
-                    button.btn.btn-primary.mx-1 D
-            div(id="question" style="").mt-5
-                div.text-center.text-muted
-                    span Wer hat schönsten Follower auf Twitch?
-                div.text-center.mt-2
-                    button.btn.btn-secondary.mx-1 A
-                    button.btn.btn-secondary.mx-1 B
-                    button.btn.btn-secondary.mx-1 C
-                    button.btn.btn-secondary.mx-1 D
+        div.mx-auto.question-container(style="position:absolute;top:50vh;left:50vw;transform:translateX(-50%) translateY(calc(-50%));")
     script(src="/socket.io/socket.io.js") 
+    script(src="/js/anime.min.js") 
     script.
         const socket = io("/admin");
 
+        socket.emit("sendTest");
+
+        let questionTemplate = `
+            <div class="pt-5 question" data-qid="{qid}">
+                <div class="text-center" style="color:rgb(108, 117, 125)">
+                    <span class="question-text">{question}</span>
+                </div>
+                <div class="text-center pt-2">
+                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">A</button>
+                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">B</button>
+                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">C</button>
+                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">D</button>
+                </div>
+            </div>
+        `;
+
         socket.on("stateUpdate", (data) => {
-            
+            let html = ``;
+            for(let question of data.questions) {
+                let i = data.questions.indexOf(question);
+                html += questionTemplate.replaceAll("{question}", question.question)
+                    .replaceAll("{qid}", i);
+            }
+            $(".question-container").html(html);
+
+            let offset = 0;
+            for(let i in data.questions) {
+                if(i < data.currentQuestion) {
+                    offset += $(`[data-qid=${i}]`)[0].clientHeight;
+                }
+                if(i == data.currentQuestion) {
+                    anime({
+                        targets: $('[data-qid='+i+'] div button').get(),
+                        "background-color": "#0d6efd",
+                        "border-color"  : "#0d6efd",
+                    });
+                    anime({
+                        targets: $('[data-qid='+i+'] div').get(0),
+                        "color": "rgb(248, 249, 250)"
+                    });
+                }
+            }
+            anime({
+                targets: '.question-container',
+                translateY: 'calc(-50% - '+offset+'px)'
+            });
         });
