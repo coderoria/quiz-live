@@ -11,11 +11,19 @@ html(lang="de")
         script(src="//cdn.jsdelivr.net/npm/sweetalert2@11") 
         title Game Controller
     body.bg-dark.text-light
-        div.mx-auto.mt-3
-            div(id="question")
-                div.text-center.text-muted
+        div.mx-auto(style="position:absolute;top:50vh;left:50vw;transform:translate(-50%, calc(-50% - 5rem));")
+            div(id="question" style="").mt-5
+                div.text-center.text-light
                     span Test
-                div.text-center.text-muted.mt-2
+                div.text-center.mt-2
+                    button.btn.btn-primary.mx-1 A
+                    button.btn.btn-primary.mx-1 B
+                    button.btn.btn-primary.mx-1 C
+                    button.btn.btn-primary.mx-1 D
+            div(id="question" style="").mt-5
+                div.text-center.text-muted
+                    span Wer hat schönsten Follower auf Twitch?
+                div.text-center.mt-2
                     button.btn.btn-secondary.mx-1 A
                     button.btn.btn-secondary.mx-1 B
                     button.btn.btn-secondary.mx-1 C
