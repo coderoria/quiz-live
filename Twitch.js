@@ -20,7 +20,7 @@ export class Twitch {
   /**
    * Retrieves the Twitch API access_token by cookie token
    * @param {String} token
-   * @returns {String} access_token
+   * @returns {Promise<String>} access_token
    */
   async getAccessTokenByToken(token) {
     let result = await (
@@ -33,9 +33,92 @@ export class Twitch {
   }
 
   /**
+   * Get a poll by ID
+   * @param {Number} broadcasterId User ID of the broadcaster
+   * @param {String} pollId ID of the poll to get
+   * @returns {Promise<Object>}
+   */
+  async getPoll(broadcasterId, pollId) {
+    if (!broadcasterId || !pollId) {
+      return null;
+    }
+    try {
+      if (!this.checkAuthById(broadcasterId)) {
+        return null;
+      }
+      let access_token = this.getAuthById(broadcasterId);
+      let result = await axios.get(
+        `https://api.twitch.tv/helix/polls?broadcaster_id=${broadcasterId}&id=${pollId}`,
+        {
+          headers: {
+            Authorization: "OAuth " + access_token,
+          },
+        }
+      );
+      return result.data.data[0];
+    } catch (e) {
+      console.error(e.stack);
+      return null;
+    }
+  }
+
+  /**
+   * Start a poll on the specified channel
+   * @param {Number} userId User ID of the channel to start the poll on
+   * @param {String} title Title of the poll
+   * @param {String[]} outcomes Possible outcomes to vote on
+   * @param {Number} time Duration of the poll in seconds
+   * @return {Promise<Number>} Id of the poll, if successful
+   */
+  async startPoll(userId, title, outcomes, time) {
+    if (!this.checkAuthById(userId)) {
+      return null;
+    }
+    for (let i in outcomes) {
+      outcomes[i] = { title: outcomes[i] };
+    }
+    let access_token = await this.getAuthById(userId);
+    try {
+      let result = await axios.post(
+        "https://api.twitch.tv/helix/polls",
+        {
+          broadcaster_id: userId,
+          title: title,
+          choices: outcomes,
+          duration: time,
+        },
+        {
+          headers: {
+            Authorization: "OAuth " + access_token,
+          },
+        }
+      );
+      return result.data.data[0].id;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
+  /**
+   * Retrieves the Twitch API access_token by user id
+   * @param {Number} userId
+   * @returns {Promise<String>} access_token
+   */
+  async getAuthById(userId) {
+    let result = await (
+      await Database.getInstance()
+    ).get("SELECT access_token FROM token WHERE user_id=?;", userId);
+    if (!result) {
+      return null;
+    }
+    return result.access_token;
+  }
+
+  /**
    * Returns the user id by access_token
    * @param {String} access_token
-   * @returns {Number} user id
+   * @returns {Promise<Number>} user id
    */
   async getIdByAuth(access_token) {
     try {
@@ -55,9 +138,48 @@ export class Twitch {
   }
 
   /**
+   * Gets the user id by the cookie token supplied with requests
+   * @param {String} cookieToken Parsed cookie token
+   * @returns {Promise<String>}
+   */
+  async getIdByCookie(cookieToken) {
+    try {
+      let result = await (
+        await Database.getInstance()
+      ).get("SELECT user_id FROM token WHERE token=?;", cookieToken);
+      if (!result) {
+        return null;
+      }
+      return result.user_id;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Checks authorization against Twitch API by access_token
+   * @param {Number} userId
+   * @returns {Promise<Boolean>} DB contains valid access_token
+   */
+  async checkAuthById(userId) {
+    if (!userId) {
+      return false;
+    }
+    try {
+      let result = await this.getAuthById(userId);
+      if (!result) {
+        return false;
+      }
+      return await this.checkAuth(result);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
    * Checks authorization against Twitch API by access_token
    * @param {String} access_token
-   * @returns {Boolean} DB contains valid access_token
+   * @returns {Promise<Boolean>} DB contains valid access_token
    */
   async checkAuth(access_token) {
     if (!access_token) {
@@ -78,7 +200,7 @@ export class Twitch {
    * If refreshing is not successful, one should consider the app
    * to be not connected to the account.
    * @param {String} access_token
-   * @returns {Boolean} Wether refreshing was successful.
+   * @returns {Promise<Boolean>} Wether refreshing was successful.
    */
   async refreshAuth(access_token) {
     try {
