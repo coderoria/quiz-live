@@ -191,7 +191,7 @@ export class Twitch {
       });
       return true;
     } catch (e) {
-      return await refreshAuth(access_token);
+      return await this.refreshAuth(access_token);
     }
   }
 
