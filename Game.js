@@ -1,4 +1,4 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { Database } from "./Database.js";
 
 export class Game {
@@ -16,13 +16,24 @@ export class Game {
   constructor() {
     Game.adminNS.fetchSockets().then((sockets) => {
       for (const socket of sockets) {
-        socket.on("showQuestion", this.showQuestion.bind(this));
-        socket.on("nextQuestion", this.nextQuestion.bind(this));
-        socket.on("selectAnswer", this.selectAnswer.bind(this));
-        socket.on("solve", this.solve.bind(this));
-        socket.on("useJoker", this.useJoker.bind(this));
+        this.bindSocket(socket);
       }
     });
+    Game.adminNS.on("connection", (socket) => {
+      this.bindSocket(socket);
+    });
+  }
+
+  /**
+   * Bind events for a game to the supplied socket
+   * @param {Socket} socket Socket to bind to
+   */
+  bindSocket(socket) {
+    socket.on("showQuestion", this.showQuestion.bind(this));
+    socket.on("nextQuestion", this.nextQuestion.bind(this));
+    socket.on("selectAnswer", this.selectAnswer.bind(this));
+    socket.on("solve", this.solve.bind(this));
+    socket.on("useJoker", this.useJoker.bind(this));
   }
 
   /**
