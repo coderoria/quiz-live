@@ -1,10 +1,12 @@
 import { Server, Socket } from "socket.io";
 import { Database } from "./Database.js";
+import { Twitch } from "./Twitch.js";
 
 export class Game {
   static instance = null;
   static io = null;
   static adminNS;
+  broadcasterId;
   running = false;
   questions = [];
   currentQuestion = 0;
@@ -12,6 +14,8 @@ export class Game {
   selectedAnswer = null;
   solved = false;
   joker = { poll: 3, fiftyFifty: 2 };
+  currentPoll;
+  pollResult = [];
 
   constructor() {
     Game.adminNS.fetchSockets().then((sockets) => {
@@ -59,8 +63,13 @@ export class Game {
   /**
    * Start a new game
    * @param {Number} catalogueId ID of the catalogue to use
+   * @param {Number} broadcasterId ID of the broadcaster (channel)
    */
-  async start(catalogueId) {
+  async start(catalogueId, broadcasterId) {
+    if (!catalogueId || !broadcasterId) {
+      return false;
+    }
+    this.broadcasterId = broadcasterId;
     let catalogue = await (
       await Database.getInstance()
     ).all("SELECT * FROM questions WHERE catalogue=?;", catalogueId);
@@ -102,6 +111,22 @@ export class Game {
    */
   showQuestion() {
     this.questionVisible = true;
+    let activeQ = this.questions[this.currentQuestion];
+    Twitch.getInstance()
+      .startPoll(
+        this.broadcasterId,
+        activeQ.question,
+        [
+          activeQ.answerOne,
+          activeQ.answerTwo,
+          activeQ.answerThree,
+          activeQ.answerFour,
+        ],
+        15
+      )
+      .then((id) => {
+        this.currentPoll = id;
+      });
     this.sendState();
   }
 
@@ -146,7 +171,7 @@ export class Game {
    * Use a joker, if available
    * @param {String} name Name of the joker
    */
-  useJoker(name) {
+  async useJoker(name) {
     if (!this.joker[name] || this.joker[name] <= 0) {
       return;
     }
@@ -164,7 +189,23 @@ export class Game {
         ] = "";
       }
     }
-    // TODO: poll joker
+    if (name == "poll") {
+      let poll = await Twitch.getInstance().getPoll(
+        this.broadcasterId,
+        this.currentPoll
+      );
+      if (!poll) {
+        return;
+      }
+      let totalVotes = 0;
+      for (let choice of poll.choices) {
+        totalVotes += choice.votes;
+      }
+
+      for (let choice of poll.choices) {
+        this.pollResult.push((choice.votes / totalVotes) * 100);
+      }
+    }
     this.joker[name]--;
     this.sendState();
   }
