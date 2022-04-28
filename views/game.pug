@@ -10,8 +10,10 @@ html(lang="de")
         link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css")
         script(src="//cdn.jsdelivr.net/npm/sweetalert2@11") 
         title Game Controller
-    body.bg-dark.text-light
-        div.mx-auto.question-container(style="position:absolute;top:50vh;left:50vw;transform:translateX(-50%) translateY(calc(-50%));")
+    body.bg-dark.text-light(style="overflow:hidden;")
+        div.col-12.col-md-3.mx-auto.question-container(style="position:absolute;top:50vh;left:50vw;transform:translateX(-50%) translateY(-50px);")
+        div(style="position:absolute;top:50vh;left:calc(50vw - 12.5vw);transform:translateY(-200%) translateX(-100%);")
+            button.btn.fa-solid.fa-eye.show-question(style="background-color:rgb(13,110,253);border-color:rgb(13,110,253);")
     script(src="/socket.io/socket.io.js") 
     script(src="/js/anime.min.js") 
     script.
@@ -24,43 +26,124 @@ html(lang="de")
                 <div class="text-center" style="color:rgb(108, 117, 125)">
                     <span class="question-text">{question}</span>
                 </div>
-                <div class="text-center pt-2">
-                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">A</button>
-                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">B</button>
-                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">C</button>
-                    <button class="btn mx-1" style="background-color:#6c757d;border-color:#6c757d;">D</button>
+                <div class="text-center pt-2 text-left">
+                    <div style="display:flex;">
+                        <button class="btn mx-1" style="width:50%;background-color:rgb(108,117,125);border-color:rgb(108,117,125);" data-aid="0">A {answerOne}</button>
+                        <button class="btn mx-1" style="width:50%;background-color:rgb(108,117,125);border-color:rgb(108,117,125);" data-aid="1">B {answerTwo}</button>
+                    </div>
+                    <div style="display:flex;" class="mt-2">
+                        <button class="btn mx-1" style="width:50%;background-color:rgb(108,117,125);border-color:rgb(108,117,125);" data-aid="2">C {answerThree}</button>
+                        <button class="btn mx-1" style="width:50%;background-color:rgb(108,117,125);border-color:rgb(108,117,125);" data-aid="3">D {answerFour}</button>
+                    </div>
                 </div>
             </div>
         `;
 
         socket.on("stateUpdate", (data) => {
+            // Add questions to DOM
             let html = ``;
             for(let question of data.questions) {
                 let i = data.questions.indexOf(question);
                 html += questionTemplate.replaceAll("{question}", question.question)
-                    .replaceAll("{qid}", i);
+                    .replaceAll("{qid}", i).replaceAll("{answerOne}", question.answerOne)
+                    .replaceAll("{answerTwo}", question.answerTwo)
+                    .replaceAll("{answerThree}", question.answerThree)
+                    .replaceAll("{answerFour}", question.answerFour);
             }
             $(".question-container").html(html);
 
             let offset = 0;
             for(let i in data.questions) {
-                if(i < data.currentQuestion) {
+                /** Calculate offset to scroll to
+                **/
+                if(i <= data.currentQuestion) {
                     offset += $(`[data-qid=${i}]`)[0].clientHeight;
                 }
-                if(i == data.currentQuestion) {
+                if(i == data.currentQuestion && data.questionVisible) {
+                    // paint current question buttons
                     anime({
                         targets: $('[data-qid='+i+'] div button').get(),
                         "background-color": "#0d6efd",
                         "border-color"  : "#0d6efd",
                     });
+                    // paint current question text
                     anime({
                         targets: $('[data-qid='+i+'] div').get(0),
                         "color": "rgb(248, 249, 250)"
                     });
+
+                    // event listener for current answers
+                    $(`[data-qid=${i}] div button`).on("click", (event) => {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Wirklich einloggen?",
+                            text: "Die Antwort kann nicht mehr geändert werden",
+                            timer: 3000,
+                            showConfirmButton: true,
+                            showCancelButton: true,
+                            timerProgressBar: true,
+                            confirmButtonText: "Auswählen",
+                            cancelButtonText: "Abbrechen",
+                            customClass: {
+                                confirmButton: "btn btn-warning me-2",
+                                cancelButton: "btn btn-secondary ms-2",
+                            },
+                            buttonsStyling: false,
+                        }).then((result) => {
+                            if(result.isDismissed && result.dismiss != "timer") {
+                                return;
+                            }
+                            socket.emit("selectAnswer", $(event.target).data("aid"));
+                        });
+                    });
                 }
             }
+            // animate questions to scroll to current one
             anime({
                 targets: '.question-container',
-                translateY: 'calc(-50% - '+offset+'px)'
+                translateY: '-'+offset+'px'
+            });
+
+            // color selected answer and other answers
+            if(data.selectedAnswer != null) {
+                let aid = data.selectedAnswer;
+                let qid = data.currentQuestion;
+                $(`[data-qid=${qid}] div button`).off();
+
+                anime({
+                    targets: $(`[data-qid=${qid}] div button`).not(`[data-aid=${aid}]`).get(),
+                    "background-color": "rgb(108,117,125)",
+                    "border-color": "rgb(108,117,125)"
+                });
+                anime({
+                    targets: $(`[data-qid=${qid}] div [data-aid=${aid}]`).get(),
+                    "background-color": "rgb(255, 193, 7)",
+                    "border-color": "rgb(255, 193, 7)"
+                });
+            }
+
+            // change visibility button
+            if(data.questionVisible) {
+                $(`.show-question`).removeClass("fa-eye").addClass("fa-eye-slash");
+                anime({
+                    targets: '.show-question',
+                    "background-color": "rgb(108,117,125)",
+                    "border-color": "rgb(108,117,125)"
+                })
+            }else {
+                $(`.show-question`).removeClass("fa-eye-slash").addClass("fa-eye");
+                anime({
+                    targets: '.show-question',
+                    "background-color": "rgb(13,110,253)",
+                    "border-color": "rgb(13,110,253)"
+                })
+            }
+
+            // visibility button listener
+            $(".show-question").on("click", (event) => {
+                if(data.questionVisible) {
+                    return;
+                }
+                socket.emit("showQuestion");
             });
         });
