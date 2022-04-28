@@ -13,7 +13,9 @@ html(lang="de")
     body.bg-dark.text-light(style="overflow:hidden;")
         div.col-12.col-md-3.mx-auto.question-container(style="position:absolute;top:50vh;left:50vw;transform:translateX(-50%) translateY(-50px);")
         div(style="position:absolute;top:50vh;left:calc(50vw - 12.5vw);transform:translateY(-200%) translateX(-100%);")
-            button.btn.fa-solid.fa-eye.show-question(style="background-color:rgb(13,110,253);border-color:rgb(13,110,253);")
+            div(style="display: flex")
+                button.btn.btn-primary.me-3 Test
+                button.btn.fa-solid.fa-eye.show-question(style="background-color:rgb(13,110,253);border-color:rgb(13,110,253);")
     script(src="/socket.io/socket.io.js") 
     script(src="/js/anime.min.js") 
     script.
